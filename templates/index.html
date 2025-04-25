@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Sync Dashboard</title>
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+            border: none;
+        }
+
+        .disabled {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid black;
+            text-align: left;
+        }
+
+        /* ✅ 1. Console styles */
+        #console {
+            margin-top: 40px;
+            padding: 15px;
+            background: #111;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 14px;
+            height: 200px;
+            overflow-y: scroll;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <h2>Manual Triggers</h2>
+
+    <h3>Load Data to PostgreSQL</h3>
+    <button class="trigger-btn" onclick="triggerAction('run_batch')">Run Batch Load</button>
+
+    <h3>Custom SQL</h3>
+    <a href="/custom_query">
+        <button class="btn btn-primary">Open Query Console</button>
+    </a>
+
+    <h3>Sync Tables</h3>
+    <div style="margin-bottom: 10px;">
+        <strong>Clicks</strong><br>
+        <button class="trigger-btn" onclick="triggerAction('sync', 'clicks')">Sync Clicks (Incremental)</button>
+        <button class="trigger-btn" onclick="triggerAction('sync', 'clicks', true)">Sync Clicks (with reset)</button>
+    </div>
+    <div style="margin-bottom: 10px;">
+        <strong>Impressions</strong><br>
+        <button class="trigger-btn" onclick="triggerAction('sync', 'impressions')">Sync Impressions (Incremental)</button>
+        <button class="trigger-btn" onclick="triggerAction('sync', 'impressions', true)">Sync Impressions (with reset)</button>
+    </div>
+    <div style="margin-bottom: 10px;">
+        <strong>Campaign</strong><br>
+        <button class="trigger-btn" onclick="triggerAction('sync', 'campaign')">Sync Campaign (Incremental)</button>
+        <button class="trigger-btn" onclick="triggerAction('sync', 'campaign', true)">Sync Campaign (with reset)</button>
+    </div>
+    <div style="margin-bottom: 10px;">
+        <strong>Advertiser</strong><br>
+        <button class="trigger-btn" onclick="triggerAction('sync', 'advertiser')">Sync Advertiser (Incremental)</button>
+        <button class="trigger-btn" onclick="triggerAction('sync', 'advertiser', true)">Sync Advertiser (with reset)</button>
+    </div>
+
+    <h3>Reset Data</h3>
+    <button class="btn btn-danger" onclick="showModal()">🔥 Reset Postgres Data</button>
+
+    <!-- Reset Confirmation Modal -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Are you sure you want to reset all data?</h3>
+            <button class="btn btn-danger" onclick="confirmReset()">Yes, Reset</button>
+            <button class="btn btn-primary" onclick="closeModal()">No, Cancel</button>
+        </div>
+    </div>
+
+    <!-- ✅ 2. Add this console div -->
+    <div id="console">
+        <div>> Console ready.</div>
+    </div>
+
+    <script>
+        // ✅ 3. Enhanced triggerAction function with console logs
+        function triggerAction(action, table = null, reset = false) {
+            const consoleDiv = document.getElementById("console");
+            const log = (msg) => {
+                const line = document.createElement("div");
+                line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                consoleDiv.appendChild(line);
+                consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            };
+
+            let url = `/${action}`;
+            if (action === 'sync' && table) {
+                url += `/${table}`;
+            }
+            if (reset) {
+                url += `?reset=true`;
+            }
+
+            log(`Triggering action: ${url}`);
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    log(`✅ Success: ${data.message || "Completed"}`);
+                })
+                .catch(error => {
+                    log(`❌ Error: ${error.message}`);
+                });
+        }
+
+        function showModal() {
+            document.getElementById("myModal").style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("myModal").style.display = "none";
+        }
+
+        function confirmReset() {
+            const log = (msg) => {
+                const line = document.createElement("div");
+                line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                document.getElementById("console").appendChild(line);
+                document.getElementById("console").scrollTop = document.getElementById("console").scrollHeight;
+            };
+
+            log("⚠️ Reset triggered");
+
+            fetch('/run_reset?confirm=yes')
+                .then(response => {
+                    if (response.status === 200) {
+                        log("🔥 Data has been reset.");
+                    } else {
+                        log("❌ Failed to reset data.");
+                    }
+                    closeModal();
+                })
+                .catch(error => {
+                    log(`❌ Error: ${error.message}`);
+                    closeModal();
+                });
+        }
+    </script>
+</body>
+</html>

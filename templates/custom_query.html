@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Query</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .message {
+            margin-top: 20px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid black;
+            text-align: left;
+        }
+        a {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #337ab7;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="/">← Back to Home</a>
+    <h2>Run a Custom SQL Query</h2>
+
+    <!-- Form for running queries -->
+    <form id="queryForm" action="/custom_query" method="POST">
+        <textarea id="queryBox" name="query" rows="4" placeholder="Enter your SQL query here...">{{ request.form.query or '' }}</textarea><br>
+
+        <!-- Hidden input for predefined queries -->
+        <input type="hidden" id="query_file" name="predefined_query" value="">
+
+        <button type="submit" class="btn">Run Query</button>
+        <!-- Predefined Query Buttons -->
+        <button type="button" class="btn" onclick="runPredefinedQuery('click_through_rate.sql')">ClickThroughRate</button>
+        <button type="button" class="btn" onclick="runPredefinedQuery('daily_impressions_clicks.sql')">DailyImpressionsClicks</button>
+        <button type="button" class="btn" onclick="runPredefinedQuery('hourly_impressions_clicks.sql')">HourlyImpressionsClicks</button>
+    </form>
+
+    <div class="message">
+        {% if error %}
+            <p class="error">Error: {{ error }}</p>
+        {% endif %}
+        {% if success %}
+            <p class="success">{{ success }}</p>
+        {% endif %}
+    </div>
+
+    {% if results %}
+        <table>
+            <thead>
+                <tr>
+                    {% for col in columns %}
+                        <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in results %}
+                    <tr>
+                        {% for cell in row %}
+                            <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <script>
+        // Function to handle predefined query button clicks
+        function runPredefinedQuery(filename) {
+            // Set the filename for the predefined query in the hidden input
+            document.getElementById('query_file').value = filename;
+
+            // Clear any manual input in the query box
+            document.getElementById('queryBox').value = '';
+
+            // Submit the form to run the predefined query
+            document.getElementById('queryForm').submit();
+        }
+    </script>
+
+</body>
+</html>
