@@ -2,7 +2,8 @@
 
 import argparse
 import sys
-from seed import (
+import random
+from etl.seed import (
     get_connection,
     create_advertisers,
     create_campaigns,
@@ -51,13 +52,14 @@ def parse_args():
     batch_parser.add_argument(
         "--impressions", type=int, default=100, help="Impressions per campaign"
     )
-    batch_parser.add_argument("--ctr", type=float, default=0.1, help="Click-through rate (0.0-1.0)")
+    batch_parser.add_argument("--ctr", type=float, default=0.1, help="Base click-through rate (0.0-1.0)")
 
     # Show stats command
     subparsers.add_parser("stats", help="Show database statistics")
 
     # Reset command
-    subparsers.add_parser("reset", help="Reset all data (USE WITH CAUTION)")
+    reset_parser = subparsers.add_parser("reset", help="Reset all data (USE WITH CAUTION)")
+    reset_parser.add_argument("--yes", action="store_true", help="Skip confirmation and reset data")
 
     return parser.parse_args()
 
@@ -124,12 +126,13 @@ def show_stats(conn):
             )
 
 
-def reset_data(conn):
-    """Reset all data in the database."""
-    confirmation = input("This will DELETE ALL DATA. Type 'yes' to confirm: ")
-    if confirmation.lower() != "yes":
-        print("Operation cancelled.")
-        return
+def reset_data(conn, confirm=False):
+    """Reset all data in the database, with an optional confirmation flag."""
+    if not confirm:
+        confirmation = input("This will DELETE ALL DATA. Type 'yes' to confirm: ")
+        if confirmation.lower() != "yes":
+            print("Operation cancelled.")
+            return
 
     with conn.cursor() as cur:
         print("Deleting all data...")
@@ -139,6 +142,15 @@ def reset_data(conn):
         cur.execute("DELETE FROM advertiser")
         conn.commit()
         print("All data has been deleted.")
+
+
+def generate_campaign_ctr(base_ctr):
+    """Generate a random CTR based on the base CTR value."""
+    # Apply random variation (±5% of the base CTR)
+    variation = random.uniform(-0.05, 0.05)
+    campaign_ctr = base_ctr + variation
+    # Ensure CTR stays within 0 to 1 range
+    return max(0.0, min(1.0, campaign_ctr))
 
 
 def main():
@@ -189,15 +201,19 @@ def main():
             print(f"Created clicks for campaign #{args.campaign_id} with {args.ratio*100:.1f}% CTR")
 
         elif args.command == "batch":
-            from seed import main as seed_main
+            # For each advertiser and campaign, generate a varied CTR
+            from etl.seed import main as seed_main
 
-            seed_main(args.advertisers, args.campaigns, args.impressions, args.ctr)
+            for adv_id in range(args.advertisers):
+                for camp_id in range(args.campaigns):
+                    ctr = generate_campaign_ctr(args.ctr)
+                    seed_main(adv_id, camp_id, args.impressions, ctr)
 
         elif args.command == "stats":
             show_stats(conn)
 
         elif args.command == "reset":
-            reset_data(conn)
+            reset_data(conn, confirm=args.yes)  # Pass 'yes' flag to reset_data()
 
     except Exception as e:
         print(f"Error: {e}")

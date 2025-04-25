@@ -19,25 +19,14 @@ services:
       interval: 5s
       retries: 5
 
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   container_name: pgadmin
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
-  #     PGADMIN_DEFAULT_PASSWORD: admin
-  #     PGADMIN_CONFIG_SERVER_MODE: "False"
-  #   ports:
-  #     - "5050:80"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #       restart: true
-
   # -------------------------------------
   # ClickHouse
   # -------------------------------------
   clickhouse:
     image: clickhouse/clickhouse-server
+    environment:
+      - CLICKHOUSE_USER=clickhouse
+      - CLICKHOUSE_PASSWORD=clickhouse
     container_name: ch_analytics
     ulimits:
       nofile:
@@ -54,6 +43,21 @@ services:
       retries: 5
 
   # -------------------------------------
+  # ClickHouse Initialization (Schema Setup)
+  # -------------------------------------
+  clickhouse-init:
+    image: clickhouse/clickhouse-server
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    volumes:
+      - ./migrations/clickhouse_schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    environment:
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+    command: bash -c "sleep 10 && echo 'Running schema.sql' && clickhouse-client --host clickhouse --user clickhouse --password clickhouse --multiquery < /docker-entrypoint-initdb.d/schema.sql"
+
+  # -------------------------------------
   # Flyway Migrations
   # -------------------------------------
   flyway:
@@ -62,12 +66,34 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-        restart: true
     command: -url=jdbc:postgresql://postgres:5432/postgres -user=postgres -locations=filesystem:/flyway/sql migrate
     volumes:
       - ./migrations/:/flyway/sql
     environment:
       FLYWAY_CONNECT_RETRIES: 10
+
+  # -------------------------------------
+  # Python App (runs app.py using uv)
+  # -------------------------------------
+  app:
+    image: python:3.12-slim
+    container_name: my_python_app
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+      clickhouse-init:
+        condition: service_completed_successfully
+    command: >
+      sh -c "
+          pip install uv &&
+          . .venv/bin/activate &&
+          uv run python app.py
+        "
 
 volumes:
   postgres_data:
