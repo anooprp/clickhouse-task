@@ -20,7 +20,7 @@ def test_sync_table():
     dest_data=result.result_rows[0]
     print(dest_data)
     client.close()
-    assert sorted(src_data) == sorted(dest_data)
+    assert src_data == dest_data
     print("✅ Postgres-Clickhouse Sync OK")
 
 if __name__ == "__main__":
