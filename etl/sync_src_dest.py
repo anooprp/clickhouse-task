@@ -1,30 +1,10 @@
-import psycopg
+import sys
 import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import argparse
-import clickhouse_connect
 import pandas as pd
-
-POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "psql_source")
-POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
-POSTGRES_DB = os.environ.get("POSTGRES_DB", "postgres")
-POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
-POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "postgres")
-
-CLICKHOUSE_HOST = os.environ.get("CLICKHOUSE_HOST", "ch_analytics")
-CLICKHOUSE_USER = os.environ.get("CLICKHOUSE_USER", "clickhouse")
-CLICKHOUSE_PASSWORD = os.environ.get("CLICKHOUSE_PASSWORD", "clickhouse")
-
-
-# Create ClickHouse client
-def get_clickhouse_client():
-    return clickhouse_connect.get_client(
-        host=CLICKHOUSE_HOST,
-        port=8123,  # Default ClickHouse port
-        username=CLICKHOUSE_USER,
-        password=CLICKHOUSE_PASSWORD,
-        database='default'
-    )
-
+from utils.db_connections import get_postgres_client,get_clickhouse_client
 
 def get_table_timestamp_column(table_name):
     client = get_clickhouse_client()
@@ -53,13 +33,7 @@ def get_last_sync_time(table_name, timestamp_column):
 
 
 def fetch_from_postgres(table_name, timestamp_column=None, last_sync=None):
-    conn = psycopg.connect(
-        host=POSTGRES_HOST,
-        port=POSTGRES_PORT,
-        dbname=POSTGRES_DB,
-        user=POSTGRES_USER,
-        password=POSTGRES_PASSWORD
-    )
+    conn = get_postgres_client()
 
     with conn.cursor() as cur:
         if timestamp_column and last_sync:

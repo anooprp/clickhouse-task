@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import subprocess
-from etl.sync_table import run_clickhouse_sql
+from etl.sync_src_dest import run_clickhouse_sql
 from utils.sql_loader import load_sql_file
 
 app = Flask(__name__)
@@ -18,7 +18,7 @@ def run_batch():
 def sync_table(table):
     reset = request.args.get("reset", "false").lower() == "true"
     if table in ["clicks", "impressions", "campaign", "advertiser"]:
-        cmd = ["uv", "run", "python", "etl/sync_table.py", table]
+        cmd = ["uv", "run", "python", "etl/sync_src_dest.py", table]
         if reset:
             cmd.append("--reset")
         subprocess.Popen(cmd)

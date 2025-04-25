@@ -4,7 +4,7 @@ import argparse
 import sys
 import random
 from etl.seed import (
-    get_connection,
+    get_postgres_client,
     create_advertisers,
     create_campaigns,
     create_impressions,
@@ -160,7 +160,7 @@ def main():
         print("No command specified. Use --help for options.")
         sys.exit(1)
 
-    conn = get_connection()
+    conn = get_postgres_client()
     if not conn:
         print("Could not connect to Postgres. Exiting.")
         sys.exit(1)

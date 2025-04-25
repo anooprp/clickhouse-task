@@ -42,3 +42,12 @@ CREATE TABLE IF NOT EXISTS clicks
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(created_at)
 ORDER BY (campaign_id, created_at);
+
+CREATE TABLE IF NOT EXISTS test_table
+(
+    id UInt32,
+    created_at Date
+)
+ENGINE = MergeTree()
+PARTITION BY toYYYYMM(created_at)
+ORDER BY (id);

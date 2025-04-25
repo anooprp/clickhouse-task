@@ -1,20 +1,12 @@
-import psycopg
+import sys
 import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import random
 import datetime
 from datetime import date, timedelta, datetime
+from utils.db_connections  import get_postgres_client
 
-POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "psql_source")
-POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
-POSTGRES_DB = os.environ.get("POSTGRES_DB", "postgres")
-POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
-
-
-def get_connection():
-    return psycopg.connect(
-        f"host={POSTGRES_HOST} port={POSTGRES_PORT} dbname={POSTGRES_DB} user={POSTGRES_USER}",
-        autocommit=False,
-    )
 
 
 def create_advertisers(conn, num_advertisers=2):
@@ -111,7 +103,7 @@ def main(
     num_advertisers=2, campaigns_per_advertiser=3, impressions_per_campaign=100, click_ratio=0.1
 ):
     """Seed the database with test data."""
-    conn = get_connection()
+    conn = get_postgres_client()
     if not conn:
         print("Could not connect to Postgres. Exiting.")
         return

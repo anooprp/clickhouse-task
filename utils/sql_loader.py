@@ -8,6 +8,5 @@ def load_sql_file(filename):
     if ".." in filename or "/" in filename:
         raise ValueError("Invalid query filename")
     filepath = os.path.join(QUERY_DIR, filename)
-    print(filepath)
     with open(filepath, "r") as f:
         return f.read()
