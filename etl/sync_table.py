@@ -129,7 +129,6 @@ def load_parquet_to_clickhouse(table_name, parquet_file_path):
 
     # Read Parquet file into DataFrame
     df = pd.read_parquet(parquet_file_path)
-    print(df)
 
     # Insert DataFrame into ClickHouse
     print('Inserting data using dataframe ')
