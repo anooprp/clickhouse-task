@@ -1,0 +1,41 @@
+name: Run ETL Tests in Docker
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Start Docker Compose
+        run: docker compose up -d
+
+      - name: Wait for services to start
+        run: |
+          echo "Waiting for app to be ready..."
+          sleep 10
+
+      - name: Run test_connection.py
+        run: docker exec my_python_app uv run pytest tests/test_connection.py
+
+      - name: Run test_sync.py
+        run: docker exec my_python_app uv run pytest tests/test_sync.py
+
+      - name: Run test_utils.py
+        run: docker exec my_python_app uv run pytest tests/test_utils.py
+
+      - name: Tear down Docker Compose
+        if: always()
+        run: docker compose down
