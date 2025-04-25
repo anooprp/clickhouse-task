@@ -103,7 +103,6 @@ def load_parquet_to_clickhouse(table_name, parquet_file_path):
 
     # Read Parquet file into DataFrame
     df = pd.read_parquet(parquet_file_path)
-
     # Insert DataFrame into ClickHouse
     print('Inserting data using dataframe ')
     client.insert_df(table_name, df)
@@ -118,7 +117,6 @@ def load_parquet_to_clickhouse(table_name, parquet_file_path):
 def convert_postgres_to_parquet(table_name):
     # Fetch all data from the PostgreSQL table
     data, colnames = fetch_from_postgres(table_name)
-
     # Convert the data to a DataFrame
     df = pd.DataFrame(data, columns=colnames)
 
