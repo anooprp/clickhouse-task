@@ -91,6 +91,7 @@ services:
     command: >
       sh -c "
           pip install uv &&
+          uv sync &&
           . .venv/bin/activate &&
           uv run python app.py
         "
